@@ -14,7 +14,7 @@ Local installation guide
 `docs` : affect documentation only\
 `build` : affect build components like build tool, ci pipeline, dependencies, project version, ...\
 `ops` : affect operational components like infrastructure, deployment, backup, recovery, ...\
-`chore` : Miscellaneous commits\
+`chore` : Miscellaneous commits
 
 <style>
     h2 {
