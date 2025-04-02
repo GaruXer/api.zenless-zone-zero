@@ -15,9 +15,3 @@ Local installation guide
 `build` : affect build components like build tool, ci pipeline, dependencies, project version, ...\
 `ops` : affect operational components like infrastructure, deployment, backup, recovery, ...\
 `chore` : Miscellaneous commits
-
-<style>
-    h2 {
-        border-bottom: solid #ccc 1px
-    }
-</style>
