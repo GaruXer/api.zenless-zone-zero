@@ -1,0 +1,23 @@
+from enum import Enum
+
+class StatsType(Enum):
+    FLAT_ATK = "flat_atk"
+    PERCENT_ATK = "percent_atk"
+    BASE_ATK = "base_atk"
+    FLAT_HP = "flat_hp"
+    PERCENT_HP = "percent_hp"
+    FLAT_DEF = "flat_def"
+    PERCENT_DEF = "percent_def"
+    PEN_RATIO = "pen_ratio"
+    PEN = "pen"
+    CRIT_RATE = "crit_rate"
+    CRIT_DMG = "crit_dmg"
+    ANOMALY_PROFICIENCY = "anomaly_proficiency"
+    ANOMALY_MASTERY = "anomaly_mastery"
+    IMPACT = "impact"
+    ENERGY_REGEN = "energy_regen"
+    PHYSICAL_DMG = "physical_dmg"
+    FIRE_DMG = "fire_dmg"
+    ICE_DMG = "ice_dmg"
+    ELECTRIC_DMG = "electric_dmg"
+    ETHER_DMG = "ether_dmg"
