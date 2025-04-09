@@ -10,7 +10,7 @@ services:
       - database
 
   database:
-    image: postgres
+    image: postgres:bookworm
     container_name: postgres_database
     restart: always
     environment:
