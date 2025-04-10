@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from models.Bangboo import Bangboo
-from schemas.Bangboo import BangbooBase
+from src.models.Bangboo import Bangboo
+from src.schemas.Bangboo import BangbooBase
 
 def create_bangboo(db: Session, bangboo: BangbooBase):
     bangboo = Bangboo(**bangboo.model_dump())

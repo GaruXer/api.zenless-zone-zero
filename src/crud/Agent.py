@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from models.Agent import Agent
-from schemas.Agent import AgentBase
+from src.models.Agent import Agent
+from src.schemas.Agent import AgentBase
 
 def create_agent(db: Session, agent: AgentBase):
     agent = Agent(**agent.model_dump())

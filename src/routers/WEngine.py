@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from crud import WEngine as crud
-from database import get_db
-from schemas.WEngine import WEngineBase, WEngineData
+from src.crud import WEngine as crud
+from src.database import get_db
+from src.schemas.WEngine import WEngineBase, WEngineData
 
 router = APIRouter(prefix="/w-engine", tags=["WEngine"])
 

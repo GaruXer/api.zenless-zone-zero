@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from models.SkillType import SkillType
+from src.models.SkillType import SkillType
 from .SkillMultiplier import SkillMultiplierBase
 
 class SkillBase(BaseModel):

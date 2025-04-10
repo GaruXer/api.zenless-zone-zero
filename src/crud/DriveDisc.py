@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from models.DriveDisc import DriveDisc
-from schemas.DriveDisc import DriveDiscBase
+from src.models.DriveDisc import DriveDisc
+from src.schemas.DriveDisc import DriveDiscBase
 
 def create_drive_disc(db: Session, drive_disc: DriveDiscBase):
     drive_disc = DriveDisc(**drive_disc.model_dump())

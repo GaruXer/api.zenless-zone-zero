@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from models.StatsType import StatsType
+from src.models.StatsType import StatsType
 
 class StatsBase(BaseModel):
     stats: StatsType

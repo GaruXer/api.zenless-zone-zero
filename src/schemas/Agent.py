@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from models.Attribute import Attribute
-from models.Specialty import Specialty
+from src.models.Attribute import Attribute
+from src.models.Specialty import Specialty
 from .Faction import FactionBase
 from .Mindscape import MindscapeBase
 from .Skill import SkillBase

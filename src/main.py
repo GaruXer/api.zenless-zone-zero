@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 
-from routers import Agent, Bangboo, DriveDisc, WEngine
+from src.config import settings
+from src.routers import Agent, Bangboo, DriveDisc, WEngine
 
-app_name = "Zenless Zone Zero API"
-version = "0.0.0"
+api_name = "Zenless Zone Zero API"
 
-app = FastAPI(title=app_name, version=version)
+app = FastAPI(title=api_name, version=settings.API_VERSION)
 
 app.include_router(Agent.router)
 app.include_router(Bangboo.router)
@@ -15,7 +15,7 @@ app.include_router(WEngine.router)
 @app.get("/")
 def read_root():
     return {
-        "name": app_name,
-        "version": version,
-        "documentation_url": "/docs",
+        "name": api_name,
+        "version": settings.API_VERSION,
+        "documentation_url": "/docs"
     }

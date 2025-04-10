@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from crud import Bangboo as crud
-from database import get_db
-from schemas.Bangboo import BangbooBase, BangbooData
+from src.crud import Bangboo as crud
+from src.database import get_db
+from src.schemas.Bangboo import BangbooBase, BangbooData
 
 router = APIRouter(prefix="/bangboo", tags=["Bangboo"])
 

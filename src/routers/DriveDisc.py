@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from crud import DriveDisc as crud
-from database import get_db
-from schemas.DriveDisc import DriveDiscBase, DriveDiscData
+from src.crud import DriveDisc as crud
+from src.database import get_db
+from src.schemas.DriveDisc import DriveDiscBase, DriveDiscData
 
 router = APIRouter(prefix="/drive-disc", tags=["DriveDisc"])
 

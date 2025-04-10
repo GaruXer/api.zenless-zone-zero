@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from models.Specialty import Specialty
+from src.models.Specialty import Specialty
 from .Stats import StatsBase
 
 class WEngineBase(BaseModel):

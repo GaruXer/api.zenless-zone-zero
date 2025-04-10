@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from crud import Agent as crud
-from database import get_db
-from schemas.Agent import AgentBase, AgentData
+from src.crud import Agent as crud
+from src.database import get_db
+from src.schemas.Agent import AgentBase, AgentData
 
 router = APIRouter(prefix="/agent", tags=["Agent"])
 
