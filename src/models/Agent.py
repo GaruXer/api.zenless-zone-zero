@@ -23,8 +23,8 @@ class Agent(Base):
     faction_id = Column(Integer, ForeignKey("factions.id"))
     
     # Relations
-    faction = relationship("Faction")
-    voice_actors = relationship("VoiceActor")
-    base_stats = relationship("Stats")
-    skills = relationship("Skill")
-    mindscapes = relationship("Mindscape")
+    faction = relationship("Faction", backref=None, cascade="all")
+    voice_actors = relationship("VoiceActor", backref=None, cascade="all, delete-orphan")
+    base_stats = relationship("Stats", backref=None, cascade="all, delete-orphan")
+    skills = relationship("Skill", backref=None, cascade="all, delete-orphan")
+    mindscapes = relationship("Mindscape", backref=None, cascade="all, delete-orphan")

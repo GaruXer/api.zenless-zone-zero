@@ -15,6 +15,6 @@ class Bangboo(Base):
     faction_id = Column(Integer, ForeignKey('factions.id'))
 
     # Relations
-    faction = relationship("Faction")
-    base_stats = relationship("Stats")
-    skills = relationship("Skill")
+    faction = relationship("Faction", backref=None, cascade="all")
+    base_stats = relationship("Stats", backref=None, cascade="all, delete-orphan")
+    skills = relationship("Skill", backref=None, cascade="all, delete-orphan")

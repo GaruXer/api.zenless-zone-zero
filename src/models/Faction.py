@@ -7,7 +7,3 @@ class Faction(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-
-    # Foreign Keys
-    agent_id = Column(Integer, ForeignKey('agents.id'))
-    bangboo_id = Column(Integer, ForeignKey('bangboo.id'))

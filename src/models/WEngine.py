@@ -13,10 +13,6 @@ class WEngine(Base):
     specialty = Column(Enum(Specialty, name="specialty"), nullable=False)
     effect = Column(String)
 
-    # Foreign Keys
-    base_stats_id = Column(Integer, ForeignKey('stats.id'))
-    advanced_stats_id = Column(Integer, ForeignKey('stats.id'))
-
     # Relations
-    base_stats = relationship("Stats", foreign_keys=[base_stats_id], uselist=False)
-    advanced_stats = relationship("Stats", foreign_keys=[advanced_stats_id], uselist=False)
+    base_stats = relationship("Stats", foreign_keys="Stats.base_stats_id", backref=None, cascade="all, delete-orphan")
+    advanced_stats = relationship("Stats", foreign_keys="Stats.advanced_stats_id", backref=None, cascade="all, delete-orphan")
