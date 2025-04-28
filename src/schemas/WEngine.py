@@ -7,8 +7,8 @@ class WEngineBase(BaseModel):
     name: str
     rank: str
     specialty: Specialty
-    base_stats: StatsBase
-    advanced_stats: StatsBase
+    base_stats: list[StatsBase]
+    advanced_stats: list[StatsBase]
     effect: str
 
 class WEngineData(WEngineBase):

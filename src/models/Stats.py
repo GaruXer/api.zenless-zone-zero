@@ -14,3 +14,5 @@ class Stats(Base):
     # Foreign Keys
     agent_id = Column(Integer, ForeignKey('agents.id'))
     bangboo_id = Column(Integer, ForeignKey('bangboo.id'))
+    base_stats_id = Column(Integer, ForeignKey('w_engines.id'))
+    advanced_stats_id = Column(Integer, ForeignKey('w_engines.id'))

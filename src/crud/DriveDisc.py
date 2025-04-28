@@ -42,3 +42,12 @@ def delete_drive_disc(db: Session, drive_disc_id: int):
         db.commit()
 
     return drive_disc
+
+
+def create_or_update_drive_disc(db: Session, drive_disc: DriveDiscBase):
+    drive_disc_in_db = db.query(DriveDisc).filter_by(name = drive_disc.name).first()
+
+    if drive_disc_in_db:
+        update_drive_disc(db, drive_disc_in_db.id, drive_disc)
+    else:
+        create_drive_disc(db, drive_disc)

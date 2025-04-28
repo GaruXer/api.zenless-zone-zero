@@ -17,4 +17,4 @@ class Skill(Base):
     bangboo_id = Column(Integer, ForeignKey('bangboo.id'))
 
     # Relation
-    multipliers = relationship("SkillMultiplier")
+    multipliers = relationship("SkillMultiplier", backref=None, cascade="all, delete-orphan")
