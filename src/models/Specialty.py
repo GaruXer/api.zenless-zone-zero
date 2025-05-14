@@ -6,3 +6,4 @@ class Specialty(Enum):
     ATTACK = "attack"
     STUN = "stun"
     SUPPORT = "support"
+    RUPTURE = "rupture"

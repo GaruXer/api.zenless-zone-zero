@@ -1,8 +1,8 @@
 """create all tables
 
-Revision ID: 858a10c1c981
+Revision ID: d73a60e07260
 Revises: 
-Create Date: 2025-04-28 11:39:52.130965
+Create Date: 2025-05-14 14:22:11.310671
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '858a10c1c981'
+revision: str = 'd73a60e07260'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -39,7 +39,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('rank', sa.String(), nullable=False),
-    sa.Column('specialty', sa.Enum('DEFENSE', 'ANOMALY', 'ATTACK', 'STUN', 'SUPPORT', name='specialty'), nullable=False),
+    sa.Column('specialty', sa.Enum('DEFENSE', 'ANOMALY', 'ATTACK', 'STUN', 'SUPPORT', 'RUPTURE', name='specialty'), nullable=False),
     sa.Column('effect', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -49,7 +49,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('full_name', sa.String(), nullable=False),
     sa.Column('rank', sa.String(), nullable=False),
-    sa.Column('specialty', sa.Enum('DEFENSE', 'ANOMALY', 'ATTACK', 'STUN', 'SUPPORT', name='specialties'), nullable=False),
+    sa.Column('specialty', sa.Enum('DEFENSE', 'ANOMALY', 'ATTACK', 'STUN', 'SUPPORT', 'RUPTURE', name='specialties'), nullable=False),
     sa.Column('attribute', sa.Enum('ELECTRIC', 'ETHER', 'FIRE', 'FROST', 'ICE', 'PHYSICAL', name='attributes'), nullable=False),
     sa.Column('gender', sa.String(), nullable=True),
     sa.Column('height', sa.Integer(), nullable=True),
