@@ -1,6 +1,7 @@
 import logging
 import re
 from random import randint
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright, BrowserContext, Page
@@ -9,28 +10,13 @@ from sqlalchemy.orm import Session
 from src.crud.DriveDisc import create_or_update_drive_disc
 from src.crud.WEngine import create_or_update_w_engine
 from src.database import get_db
-from src.models import Specialty
-from src.models import StatsType
+from src.models import Specialty, StatsType
 from src.schemas.DriveDisc import DriveDiscBase
 from src.schemas.Stats import StatsBase
 from src.schemas.WEngine import WEngineBase
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
-
-def is_number(value):
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
-
-
-def get_main_data(soup: BeautifulSoup, value_type: str) -> str:
-    node = soup.find("div", class_="base-info-item-key", string=value_type).find_parent('div', class_='base-info-item')
-    value = node.find('div', class_='base-info-item-value')
-
-    return value.text.strip()
+logging.basicConfig(level=logging.INFO)
 
 
 def block_images(route):
@@ -44,7 +30,7 @@ def scroll_to_bottom(page: Page):
 
     while True:
         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-        page.wait_for_timeout(randint(750, 1250))
+        page.wait_for_timeout(randint(500, 750))
 
         new_height = page.evaluate("document.body.scrollHeight")
 
@@ -55,14 +41,28 @@ def scroll_to_bottom(page: Page):
 
 
 # DRIVE DISC
-def get_drive_disc_data(db: Session, html_content: str):
-    soup = BeautifulSoup(html_content, "html.parser")
+def extract_main_data_wh(soup: BeautifulSoup, value_type: str) -> str:
+    node = soup.find("div", class_="base-info-item-key", string=value_type).find_parent('div', class_='base-info-item')
+    value_node = node.find('div', class_='base-info-item-value')
 
-    drive_disc = DriveDiscBase(
-        name=get_main_data(soup, "Name"),
-        description_2p_set=get_main_data(soup, "2-Piece Set"),
-        description_4p_set=get_main_data(soup, "4-Piece Set")
+    return value_node.text.strip()
+
+
+def parse_drive_disc(soup: BeautifulSoup) -> DriveDiscBase:
+    return DriveDiscBase(
+        name=extract_main_data_wh(soup, "Name"),
+        description_2p_set=extract_main_data_wh(soup, "2-Piece Set"),
+        description_4p_set=extract_main_data_wh(soup, "4-Piece Set")
     )
+
+
+def get_drive_disc_data(db: Session, page: Page):
+    soup = BeautifulSoup(page.content(), "html.parser")
+
+    try:
+        drive_disc = parse_drive_disc(soup)
+    except Exception as e:
+        logger.error(f" Error parsing Drive Disc: {e}")
 
     logger.debug(f" Create or update drive disc : {drive_disc.name}")
     create_or_update_drive_disc(db, drive_disc)
@@ -75,7 +75,6 @@ def get_all_drive_discs(db: Session, context: BrowserContext, url: str):
     scroll_to_bottom(page)
 
     drive_discs_nodes = page.locator(".hover\\:tw-border-zzz-l-brand-yellow-3")
-    logger.debug(f" Getting {drive_discs_nodes.count()} drive discs to create or update")
 
     for i in range(drive_discs_nodes.count()):
         with context.expect_page() as page_info:
@@ -84,12 +83,38 @@ def get_all_drive_discs(db: Session, context: BrowserContext, url: str):
         drive_disc_page = page_info.value
         drive_disc_page.wait_for_timeout(randint(2000, 2500))
 
-        get_drive_disc_data(db, drive_disc_page.content())
+        get_drive_disc_data(db, drive_disc_page)
 
         drive_disc_page.close()
+    
+    page.close()
 
 
 # W-ENGINE
+def get_stats_type(stats: str) -> StatsType:
+    match stats:
+        case "Percent ATK":
+            return StatsType.PERCENT_ATK
+        case "Base ATK":
+            return StatsType.BASE_ATK
+        case "Percent HP":
+            return StatsType.PERCENT_HP
+        case "Percent DEF":
+            return StatsType.PERCENT_DEF
+        case "PEN Ratio":
+            return StatsType.PEN_RATIO
+        case "CRIT Rate":
+            return StatsType.CRIT_RATE
+        case "CRIT DMG":
+            return StatsType.CRIT_DMG
+        case "Anomaly Proficiency":
+            return StatsType.ANOMALY_PROFICIENCY
+        case "Energy Regen":
+            return StatsType.ENERGY_REGEN
+        case "Impact":
+            return StatsType.IMPACT
+
+
 def get_specialty(specialty: str) -> Specialty:
     match specialty:
         case "Defense":
@@ -102,100 +127,57 @@ def get_specialty(specialty: str) -> Specialty:
             return Specialty.STUN
         case "Support":
             return Specialty.SUPPORT
+        case "Rupture":
+            return Specialty.RUPTURE
 
 
-def get_stats_type(stats: str) -> StatsType:
-    match stats:
-        case "ATK":
-            return StatsType.PERCENT_ATK
-        case "ATK %":
-            return StatsType.PERCENT_ATK
-        case "Base ATK":
-            return StatsType.BASE_ATK
-        case "HP":
-            return StatsType.PERCENT_HP
-        case "HP %":
-            return StatsType.PERCENT_HP
-        case "DEF":
-            return StatsType.PERCENT_DEF
-        case "DEF %":
-            return StatsType.PERCENT_DEF
-        case "PEN Ratio":
-            return StatsType.PEN_RATIO
-        case "CRIT Rate":
-            return StatsType.CRIT_RATE
-        case "CRIT DMG":
-            return StatsType.CRIT_DMG
-        case "Anomaly Proficiency":
-            return StatsType.ANOMALY_PROFICIENCY
-        case "Energy Regen":
-            return StatsType.ENERGY_REGEN
-        case "Energy Regen %":
-            return StatsType.ENERGY_REGEN
-        case "Impact":
-            return StatsType.IMPACT
+def extract_main_data_hhw(soup: BeautifulSoup, value_type: str):
+    return soup.select_one("table.genshin_table.main_table").find("td", string=value_type).next_sibling
 
 
-def extract_stats(soup: BeautifulSoup, label: str, index: int):
-    stats_list = []
+def parse_w_engine(soup: BeautifulSoup) -> WEngineBase:
+    stats_table_node = soup.select_one("#char_stats .stat_table")
 
-    level_node = soup.select_one(".dot_b4p1b")
-    level = int(re.sub(r"\D", "", level_node.text)) if level_node is not None else 0
-    values = soup.select("tr.tr_AusNU")[index].select("td.td_bbiIZ")[:2]
+    stats_type_nodes = stats_table_node.select("thead td")
+    base_stats_type = get_stats_type(stats_type_nodes[1].text.strip())
+    advanced_stats_type = get_stats_type(stats_type_nodes[2].text.strip())
 
-    for value in values:
-        value_text = re.sub(r"[^\d.]", "", value.text)
+    base_stats_list, advanced_stats_list = [], []
 
-        if is_number(value_text):
-            stats_list.append(StatsBase(
-                stats=get_stats_type(get_main_data(soup, label)),
-                level=level,
-                value=float(value_text)
-            ))
+    for tr in stats_table_node.select("tbody > tr"):
+        td_nodes = tr.select("td")
 
-    return stats_list
+        level = int(re.sub(r"\D", "", td_nodes[0].text))
+        base_stats_value = float(re.sub(r"[^\d.]", "", td_nodes[1].text))
+        advanced_stats_value = float(re.sub(r"[^\d.]", "", td_nodes[2].text))
+
+        base_stats_list.append(StatsBase(stats=base_stats_type, level=level, value=base_stats_value))
+        advanced_stats_list.append(StatsBase(stats=advanced_stats_type, level=level, value=advanced_stats_value))
 
 
-def get_w_engine_data(db: Session, page: Page):
-    base_stats_list = []
-    advanced_stats_list = []
+    name_node = extract_main_data_hhw(soup, "Name")
+    rank_node = extract_main_data_hhw(soup, "Rarity").find_all("img")
+    specialty_node = extract_main_data_hhw(soup, "Class")
+    effect_node = soup.select_one("#char_skills .skill_dmg_table tr:nth-of-type(2) td:nth-of-type(2)")
 
-    soup = BeautifulSoup(page.content(), "html.parser")
-
-    base_stats_list.extend(extract_stats(soup, "Base Stats", 1))
-    advanced_stats_list.extend(extract_stats(soup, "Advanced Stats", 2))
-
-    slider_nodes = page.locator(".mark_qjAbg")
-
-    for i in range(1, slider_nodes.count()):
-        slider_nodes.nth(i).click()
-        page.wait_for_timeout(randint(400, 600))
-
-        soup = BeautifulSoup(page.content(), "html.parser")
-
-        base_stats_list.extend(extract_stats(soup, "Base Stats", 1))
-        advanced_stats_list.extend(extract_stats(soup, "Advanced Stats", 2))
-
-    headers = soup.select(".c-entry-tag-item")
-
-    for tag in headers:
-        value = tag.text.strip()
-
-        if len(value) > 1:
-            specialty = get_specialty(value)
-        else:
-            rank = value
-
-    effect = soup.select_one(".base-info-content > .base-info-item:last-child .base-info-item-value").text.replace("*Stats shown are at Base level.", "").strip()
-
-    w_engine = WEngineBase(
-        name=get_main_data(soup, "Name"),
-        rank=rank,
-        specialty=specialty,
+    return WEngineBase(
+        name=name_node.text.strip(),
+        rank={5: "S", 4: "A", 3: "B"}.get(len(rank_node)),
+        specialty=get_specialty(specialty_node.text.strip()),
         base_stats=base_stats_list,
         advanced_stats=advanced_stats_list,
-        effect=effect or "no description"
+        effect=effect_node.text.strip()
     )
+
+
+def get_w_engine_data(db: Session, page: Page) -> None:
+    soup = BeautifulSoup(page.content(), "html.parser")
+
+    try:
+        w_engine = parse_w_engine(soup)
+    except Exception as e:
+        logger.error(f" Error parsing W-Engine: {e}")
+        return
 
     logger.debug(f" Create or update w-engine : {w_engine.name}")
     create_or_update_w_engine(db, w_engine)
@@ -203,23 +185,33 @@ def get_w_engine_data(db: Session, page: Page):
 
 def get_all_w_engines(db: Session, context: BrowserContext, url: str):
     page = context.new_page()
+    page.route("**/*", block_images)
     page.goto(url)
-    page.wait_for_timeout(randint(2000, 2500))
-    scroll_to_bottom(page)
+    page.wait_for_timeout(randint(1000, 1500))
+    page.get_by_role("button", name="Accept").click()
 
-    w_engines_nodes = page.locator(".hover\\:tw-border-zzz-l-brand-yellow-3")
-    logger.info(f" Getting {w_engines_nodes.count()} w-engines to create or update")
+    pagination_node = page.locator(".sortable_page_table td")
 
-    for i in range(w_engines_nodes.count()):
-        with context.expect_page() as page_info:
-            w_engines_nodes.nth(i).click()
+    while True:
+        cells_nodes = page.locator(".genshin_table.sortable tbody tr td:nth-of-type(2)")
 
-        w_engine_page = page_info.value
-        w_engine_page.wait_for_timeout(randint(2000, 2500))
+        for i in range(cells_nodes.count()):
+            w_engine_page = context.new_page()
+            w_engine_page.route("**/*", block_images)
+            w_engine_page.goto(urljoin(url, cells_nodes.nth(i).locator("a").get_attribute("href")))
+            w_engine_page.wait_for_timeout(randint(1000, 1500))
 
-        get_w_engine_data(db, w_engine_page)
+            get_w_engine_data(db, w_engine_page)
+            
+            w_engine_page.close()
 
-        w_engine_page.close()
+        if pagination_node.nth(pagination_node.count() - 2).get_attribute("class") != "checked":
+            pagination_node.last.click()
+            page.wait_for_timeout(randint(1000, 1500))
+        else:
+            break
+    
+    page.close()
 
 
 if __name__ == '__main__':
@@ -231,11 +223,13 @@ if __name__ == '__main__':
         context = browser.new_context()
 
         # drive discs
-        url = 'https://wiki.hoyolab.com/pc/zzz/aggregate/12'
+        logger.info(" Creating or updating Drive Discs ...")
+        url = "https://wiki.hoyolab.com/pc/zzz/aggregate/12"
         get_all_drive_discs(db, context, url)
 
         # w-engines
-        url = 'https://wiki.hoyolab.com/pc/zzz/aggregate/11'
+        logger.info(" Creating or updating W-Engines ...")
+        url = "https://zzz.honeyhunterworld.com/w-drives"
         get_all_w_engines(db, context, url)
 
         browser.close()
