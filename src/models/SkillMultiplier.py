@@ -8,7 +8,7 @@ class SkillMultiplier(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     level = Column(Integer)
-    value = Column(Float)
+    value = Column(String)
 
     # Foreign Key
     skill_id = Column(Integer, ForeignKey("skills.id"))

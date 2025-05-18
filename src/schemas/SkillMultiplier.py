@@ -3,7 +3,7 @@ from pydantic import BaseModel
 class SkillMultiplierBase(BaseModel):
     name: str
     level: int
-    value: float | None
+    value: str
 
 class SkillMultiplierData(SkillMultiplierBase):
     id: int
