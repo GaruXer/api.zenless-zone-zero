@@ -22,7 +22,7 @@ from src.schemas.Stats import StatsBase
 from src.schemas.WEngine import WEngineBase
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 # WIKI HOYOLAB
