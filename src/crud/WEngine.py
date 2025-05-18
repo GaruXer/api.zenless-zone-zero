@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 
-from src.models import Stats
-from src.models import WEngine
+from src.models import Stats, WEngine
 from src.schemas.WEngine import WEngineBase
 
 def create_w_engine(db: Session, w_engine_data: WEngineBase):

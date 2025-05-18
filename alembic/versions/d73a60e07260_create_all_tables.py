@@ -121,7 +121,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('level', sa.Integer(), nullable=True),
-    sa.Column('value', sa.Float(), nullable=True),
+    sa.Column('value', sa.String(), nullable=True),
     sa.Column('skill_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['skill_id'], ['skills.id'], ),
     sa.PrimaryKeyConstraint('id')
