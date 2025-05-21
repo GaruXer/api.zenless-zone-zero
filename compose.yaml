@@ -1,14 +1,4 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: .docker/python/Dockerfile
-    container_name: fastapi_app
-    ports:
-      - "8000:8000"
-    depends_on:
-      - database
-
   database:
     image: postgres:bookworm
     container_name: postgres_database
