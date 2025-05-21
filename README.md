@@ -5,14 +5,14 @@ This project is a RESTful API built with Python and FastAPI, focused on providin
 Follow the steps below to set up and run the project locally.
 
 ### Prerequisites
-Before getting started, make sure you have the following installed:
+Before getting started, make sure you have the following installed :
 
 - [Python](https://www.python.org/) (version 3.13 or higher recommended)  
 - [Docker](https://www.docker.com/) and Docker Compose  
 
 ### Configure Environment Variables
 
-Create a `.env` file at the root of the project with the following content:
+Create a `.env` file at the root of the project with the following content :
 
 ```.env
 ENV=prod
