@@ -8,14 +8,17 @@ from bs4 import BeautifulSoup, Tag
 from playwright.sync_api import sync_playwright, BrowserContext, Locator, Page
 from sqlalchemy.orm import Session
 
+from src.crud.Agent import create_or_update_agent
 from src.crud.Bangboo import create_or_update_bangboo
 from src.crud.DriveDisc import create_or_update_drive_disc
 from src.crud.WEngine import create_or_update_w_engine
 from src.database import get_db
-from src.models import SkillType, Specialty, StatsType
+from src.models import Attribute, SkillType, Specialty, StatsType
+from src.schemas.Agent import AgentBase
 from src.schemas.Bangboo import BangbooBase
 from src.schemas.DriveDisc import DriveDiscBase
 from src.schemas.Faction import FactionBase
+from src.schemas.Mindscape import MindscapeBase
 from src.schemas.Skill import SkillBase
 from src.schemas.SkillMultiplier import SkillMultiplierBase
 from src.schemas.Stats import StatsBase
@@ -134,14 +137,6 @@ def extract_main_data_hhw(soup: BeautifulSoup, value_type: str):
 
 
 # DRIVE DISC
-def parse_drive_disc(soup: BeautifulSoup) -> DriveDiscBase:
-    return DriveDiscBase(
-        name=extract_main_data_wh(soup, "Name"),
-        description_2p_set=extract_main_data_wh(soup, "2-Piece Set"),
-        description_4p_set=extract_main_data_wh(soup, "4-Piece Set")
-    )
-
-
 def get_drive_disc_data(db: Session, page: Page):
     soup = BeautifulSoup(page.content(), "html.parser")
 
@@ -155,7 +150,28 @@ def get_drive_disc_data(db: Session, page: Page):
     create_or_update_drive_disc(db, drive_disc)
 
 
+def parse_drive_disc(soup: BeautifulSoup) -> DriveDiscBase:
+    return DriveDiscBase(
+        name=extract_main_data_wh(soup, "Name"),
+        description_2p_set=extract_main_data_wh(soup, "2-Piece Set"),
+        description_4p_set=extract_main_data_wh(soup, "4-Piece Set")
+    )
+
+
 # W-ENGINE
+def get_w_engine_data(db: Session, page: Page) -> None:
+    soup = BeautifulSoup(page.content(), "html.parser")
+
+    try:
+        w_engine = parse_w_engine(soup)
+    except Exception as e:
+        logger.error(f" Error parsing W-Engine: {e}")
+        return
+
+    logger.debug(f" Create or update W-Engine : {w_engine.name}")
+    create_or_update_w_engine(db, w_engine)
+
+
 def parse_w_engine(soup: BeautifulSoup) -> WEngineBase:
     stats_table_node = soup.select_one("#char_stats .stat_table")
 
@@ -191,19 +207,6 @@ def parse_w_engine(soup: BeautifulSoup) -> WEngineBase:
     )
 
 
-def get_w_engine_data(db: Session, page: Page) -> None:
-    soup = BeautifulSoup(page.content(), "html.parser")
-
-    try:
-        w_engine = parse_w_engine(soup)
-    except Exception as e:
-        logger.error(f" Error parsing W-Engine: {e}")
-        return
-
-    logger.debug(f" Create or update W-Engine : {w_engine.name}")
-    create_or_update_w_engine(db, w_engine)
-
-
 # BANGBOO
 def get_bangboo_data(db: Session, page: Page) -> None:
     soup = BeautifulSoup(page.content(), "html.parser")
@@ -226,30 +229,10 @@ def parse_bangboo(soup: BeautifulSoup) -> BangbooBase:
         name=extract_main_data_hhw(soup, "Name").text.strip(),
         rank=get_rank(extract_main_data_hhw(soup, "Rarity").find_all("img")),
         faction=FactionBase(name="undefined"),
-        base_stats=parse_bangboo_base_stats(soup),
+        base_stats=parse_base_stats(soup),
         version_released=0.0,
         skills=parse_bangboo_skills(soup)
     )
-
-
-def parse_bangboo_base_stats(soup: BeautifulSoup) -> list[StatsBase]:
-    base_stats_list = []
-
-    stats_table_node = soup.select_one("#char_stats .stat_table")
-    head_cells = stats_table_node.select("thead td")
-    body_rows = stats_table_node.select("tbody tr")
-
-    for rows in body_rows:
-        cells = rows.select("td")
-
-        for i in range(1, len(cells) - 1):
-            base_stats_list.append(StatsBase(
-                stats=get_stats_type(head_cells[i].text.strip()),
-                level=int(re.sub(r"\D", "", cells[0].text)),
-                value=float(re.sub(r"[^\d.]", "", cells[i].text))
-            ))
-
-    return base_stats_list
 
 
 def parse_bangboo_skills(soup: BeautifulSoup) -> list[SkillBase]:
@@ -309,7 +292,115 @@ def parse_bangboo_skill_multipliers(tag: Tag) -> list[SkillMultiplierBase]:
     return multipliers_list
 
 
+# AGENTS
+def get_agents_data(db: Session, context: BrowserContext, url_hhw: str, url_wh: str):
+    main_page_hhw = go_to_new_page(context, url_hhw)
+    cookie_button = main_page_hhw.get_by_role("button", name="Accept")
+    
+    if cookie_button.count() > 0:
+        cookie_button.click()
+
+    main_page_wk = context.new_page()
+    main_page_wk.goto(url_wh)
+    main_page_wk.wait_for_timeout(randint(2000, 2500))
+
+    scroll_to_bottom(main_page_wk)
+
+    pagination_node = main_page_hhw.locator(".sortable_page_table td")
+    nb_pages = get_nb_pages(pagination_node)
+    agent_nodes = main_page_wk.locator(".hover\\:tw-border-zzz-l-brand-yellow-3")
+
+    while True:
+        cells_nodes = main_page_hhw.locator(".genshin_table.sortable tbody tr td:nth-of-type(2)")
+
+        for i in range(cells_nodes.count()):
+            agent_name_node = cells_nodes.nth(i).locator("a")
+
+            if agent_name_node.text_content().strip() in ["Wise", "Belle", ""]:
+                continue
+
+            data_page = go_to_new_page(context, urljoin(url_hhw, agent_name_node.get_attribute("href")))
+            get_agent_data(db, data_page, agent_nodes)
+            data_page.close()
+
+        if pagination_node.nth(nb_pages).get_attribute("class") != "checked":
+            pagination_node.last.click()
+            main_page_hhw.wait_for_timeout(randint(500, 750))
+        else:
+            break
+
+    main_page_hhw.close()
+
+
+def get_agent_data(db: Session, page: Page, agent_nodes: Locator):
+    soup_hhw = BeautifulSoup(page.content(), "html.parser")
+
+    try:
+        with page.context.expect_page() as page_info:
+            agent_nodes.get_by_text(extract_main_data_hhw(soup_hhw, "Friend Nickname").text.strip().replace("–", "-")).click()
+
+        agent_page_wh = page_info.value
+        agent_page_wh.wait_for_timeout(randint(2000, 2500))
+
+        soup_wh = BeautifulSoup(agent_page_wh.content(), "html.parser")
+
+        agent = parse_agent(soup_hhw, soup_wh)
+
+        agent_page_wh.close()
+    except Exception as e:
+        logger.error(f" Error parsing Agent: {e}")
+        agent_page_wh.close()
+        return
+
+    logger.debug(f" Create or update Agent : {agent.full_name}")
+    create_or_update_agent(db, agent)
+
+
+def parse_agent(soup_hhw: BeautifulSoup, soup_wh: BeautifulSoup) -> AgentBase:
+    try:
+        faction_name = extract_main_data_hhw(soup_hhw, "Faction").text.strip() or extract_main_data_wh(soup_wh, "Faction")
+    except:
+        faction_name = "undefined"
+
+    return AgentBase(
+        name=extract_main_data_hhw(soup_hhw, "Name").text.strip(),
+        full_name=extract_main_data_hhw(soup_hhw, "Friend Nickname").text.strip(),
+        rank=get_rank(extract_main_data_hhw(soup_hhw, "Rarity").find_all("img")),
+        specialty=get_specialty(extract_main_data_hhw(soup_hhw, "Class").text.strip()),
+        attribute=get_attribute(extract_main_data_hhw(soup_hhw, "Element").text.strip()),
+        gender=extract_main_data_wh(soup_wh, "Gender").lower(),
+        faction=FactionBase(name=faction_name),
+        height=int(re.sub(r"\D", "", extract_main_data_wh(soup_wh, "Height") or extract_main_data_hhw(soup_hhw, "Height").text.strip())),
+        birthday=extract_main_data_wh(soup_wh, "Birthday"),
+        version_released=float(extract_main_data_wh(soup_wh, "Version Released")),
+        voice_actors=[],
+        base_stats=parse_base_stats(soup_hhw),
+        skills=[],
+        mindscapes=[]
+    )
+
+
 # GENERAL FUNCTION
+def parse_base_stats(soup: BeautifulSoup) -> list[StatsBase]:
+    base_stats_list = []
+
+    stats_table_node = soup.select_one("#char_stats .stat_table")
+    head_cells = stats_table_node.select("thead td")
+    body_rows = stats_table_node.select("tbody tr")
+
+    for rows in body_rows:
+        cells = rows.select("td")
+
+        for i in range(1, len(cells) - 1):
+            base_stats_list.append(StatsBase(
+                stats=get_stats_type(head_cells[i].text.strip()),
+                level=int(re.sub(r"\D", "", cells[0].text)),
+                value=float(re.sub(r"[^\d.]", "", cells[i].text))
+            ))
+
+    return base_stats_list
+
+
 def get_specialty(specialty: str) -> Specialty:
     match specialty.lower():
         case "defense":
@@ -324,6 +415,22 @@ def get_specialty(specialty: str) -> Specialty:
             return Specialty.SUPPORT
         case "rupture":
             return Specialty.RUPTURE
+
+
+def get_attribute(attribute: str) -> Attribute:
+    match attribute.lower():
+        case "electric":
+            return Attribute.ELECTRIC
+        case "ether":
+            return Attribute.ETHER
+        case "fire":
+            return Attribute.FIRE
+        case "frost":
+            return Attribute.FROST
+        case "ice":
+            return Attribute.ICE
+        case "physical":
+            return Attribute.PHYSICAL
 
 
 def get_rank(rank_node) -> str:
@@ -382,18 +489,24 @@ if __name__ == '__main__':
         context = browser.new_context()
 
         # drive discs
-        logger.info(" Creating or updating Drive Discs ...")
+        logger.info(" Creating and updating Drive Discs ...")
         url = "https://wiki.hoyolab.com/pc/zzz/aggregate/12"
         get_data_from_wh(db, context, url, get_drive_disc_data)
 
         # w-engines
-        logger.info(" Creating or updating W-Engines ...")
+        logger.info(" Creating and updating W-Engines ...")
         url = "https://zzz.honeyhunterworld.com/w-drives"
         get_data_from_hhw(db, context, url, get_w_engine_data)
 
         # bangboo
-        logger.info(" Creating or updating Bangboo ...")
+        logger.info(" Creating and updating Bangboo ...")
         url = "https://zzz.honeyhunterworld.com/bangboos"
         get_data_from_hhw(db, context, url, get_bangboo_data)
+
+        # agents
+        logger.info(" Creating and updating Agents ...")
+        url_hhw = "https://zzz.honeyhunterworld.com/agents"
+        url_wh = "https://wiki.hoyolab.com/pc/zzz/aggregate/8"
+        get_agents_data(db, context, url_hhw, url_wh)
 
         browser.close()
