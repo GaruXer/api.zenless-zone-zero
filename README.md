@@ -62,19 +62,6 @@ make alembic-migrate
 > alembic upgrade head
 > ```
 
-### Start the API Server
-Run the API server using `make` :
-```bash
-make uvicorn-start-prod
-```
-
-> [!WARNING]
-> If `make` is not available on your system, you can manually run :
-> ```bash
-> uvicorn src.main:app --host localhost --port 8000
-> ```
-
-
 ### Launch the Scraping Process
 To start the web scraping process :
 ```bash
@@ -85,6 +72,18 @@ make scraping
 > If `make` is not available on your system, you can manually run :
 > ```bash
 > python scraper.py
+> ```
+
+### Start the API Server
+Run the API server using `make` :
+```bash
+make uvicorn-start-prod
+```
+
+> [!WARNING]
+> If `make` is not available on your system, you can manually run :
+> ```bash
+> uvicorn src.main:app --host localhost --port 8000
 > ```
 
 You’re all set! The API should now be up and running on http://localhost:8000, and the scraping script will populate the database as needed.
