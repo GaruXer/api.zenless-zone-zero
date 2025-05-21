@@ -4,12 +4,10 @@ from src.models import Bangboo, Faction, Skill, SkillMultiplier, Stats
 from src.schemas.Bangboo import BangbooBase
 
 def create_bangboo(db: Session, bangboo: BangbooBase):
-    faction = db.query(Faction).filter(Faction.name == bangboo.faction.name).first() or Faction(**bangboo.faction.model_dump())
-
     bangboo = Bangboo(
         name=bangboo.name,
         rank=bangboo.rank,
-        faction=faction,
+        faction=db.query(Faction).filter(Faction.name == bangboo.faction.name).first() or Faction(**bangboo.faction.model_dump()),
         base_stats=[Stats(**stat.model_dump()) for stat in bangboo.base_stats],
         version_released=bangboo.version_released,
         skills=[Skill(name=skill.name, type=skill.type, description=skill.description, multipliers=[SkillMultiplier(**multiplier.model_dump()) for multiplier in skill.multipliers]) for skill in bangboo.skills]
