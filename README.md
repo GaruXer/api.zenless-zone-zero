@@ -44,6 +44,12 @@ Install the required packages using `pip` :
 pip install -r requirements.txt
 ```
 
+### Install Playwright
+Install browsers for Playwright :
+```bash
+playwright install
+```
+
 ### Start the Database with Docker
 Launch the database container in the background using Docker Compose :
 ```bash
